@@ -301,16 +301,71 @@
 
   /* SVG icons inline */
   .ico { display: inline-flex; align-items: center; }
+
+  /* ── API key setup screen ── */
+  .setup-screen {
+    position: fixed; inset: 0; z-index: 200;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 32px 24px;
+    padding-top: calc(env(safe-area-inset-top,0px) + 32px);
+    padding-bottom: calc(env(safe-area-inset-bottom,0px) + 32px);
+  }
+  .setup-icon { font-size: 56px; margin-bottom: 20px; }
+  .setup-screen h2 { font-family: 'DM Serif Display', serif; font-size: 26px; text-align: center; margin-bottom: 10px; }
+  .setup-screen p { font-size: 14px; color: var(--muted); text-align: center; line-height: 1.6; margin-bottom: 28px; max-width: 320px; }
+  .setup-field { width: 100%; max-width: 360px; margin-bottom: 12px; }
+  .setup-field label { display: block; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 6px; }
+  .setup-input {
+    width: 100%; font-size: 14px; font-family: 'DM Sans', sans-serif;
+    padding: 13px 14px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2); background: var(--surface);
+    color: var(--text); -webkit-appearance: none; letter-spacing: 0.02em;
+  }
+  .setup-input:focus { outline: none; border-color: var(--accent); }
+  .setup-btn {
+    width: 100%; max-width: 360px; padding: 14px;
+    background: var(--accent); color: var(--accent-text);
+    border: none; border-radius: var(--radius-sm);
+    font-size: 15px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; margin-top: 4px;
+  }
+  .setup-hint { font-size: 12px; color: var(--hint); text-align: center; margin-top: 16px; max-width: 320px; line-height: 1.6; }
+  .setup-hint a { color: var(--muted); }
+  .settings-btn {
+    position: fixed; top: calc(env(safe-area-inset-top,0px) + 12px); right: 16px; z-index: 15;
+    background: var(--surface2); border: 0.5px solid var(--border2);
+    border-radius: 50%; width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; color: var(--muted);
+  }
 </style>
 </head>
 <body>
-<div class="app">
+<!-- Setup / API key screen -->
+<div class="setup-screen" id="setupScreen" style="display:none">
+  <div class="setup-icon">⌚</div>
+  <h2>Ma collection de montres</h2>
+  <p>Pour extraire automatiquement les infos depuis les sites marchands, entrez votre clé API Anthropic. Elle est stockée uniquement sur votre appareil.</p>
+  <div class="setup-field">
+    <label>Clé API Anthropic</label>
+    <input class="setup-input" id="apiKeyInput" type="password" placeholder="sk-ant-api03-…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+  </div>
+  <button class="setup-btn" onclick="saveApiKey()">Continuer</button>
+  <p class="setup-hint">Obtenez votre clé sur <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a><br>L'utilisation coûte quelques centimes par extraction.</p>
+</div>
+
+<div class="app" id="mainApp">
   <!-- Top bar -->
   <div class="topbar">
     <div class="topbar-row">
       <span class="app-title">⌚ Montres</span>
       <div style="display:flex;gap:8px;align-items:center;">
         <span class="count-pill" id="countPill">0 montre</span>
+        <button id="syncBtn" onclick="syncFromCloud()" title="Synchroniser" style="background:var(--surface2);border:0.5px solid var(--border2);border-radius:50%;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;color:var(--muted);">⟳</button>
+        <button class="vtb" onclick="openSetup()" title="Clé API" style="background:var(--surface2);border-radius:50%;width:30px;height:30px;padding:0;display:flex;align-items:center;justify-content:center;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
         <div class="view-toggle">
           <button class="vtb active" id="vGrid" onclick="setView('grid')" title="Grille">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -376,12 +431,135 @@
 
 <script>
 const STORAGE_KEY = 'wc_watches_v2';
+const API_KEY_STORAGE = 'wc_api_key';
+const SUPABASE_URL = 'https://hpfxxdzwyugaamvrfudt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhwZnh4ZHp3eXVnYWFtdnJmdWR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgwOTE0NjYsImV4cCI6MjA5MzY2NzQ2Nn0.wC-PH2UfdyzXwupWTou0jyMLnc3b58JVkFFXoaOs63Y';
+
 let watches = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let view = 'grid';
 let activeTab = 'all';
 let editingId = null;
+let syncing = false;
 
-function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(watches)); }
+/* ── API Anthropic key ── */
+function getApiKey() { return localStorage.getItem(API_KEY_STORAGE) || ''; }
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('sk-ant-')) { alert('La clé doit commencer par "sk-ant-…"'); return; }
+  localStorage.setItem(API_KEY_STORAGE, key);
+  document.getElementById('setupScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'flex';
+  toast('Clé API enregistrée ✓');
+}
+
+function openSetup() {
+  document.getElementById('apiKeyInput').value = getApiKey();
+  document.getElementById('setupScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+}
+
+/* ── Supabase sync ── */
+const sbHeaders = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+
+async function syncFromCloud() {
+  try {
+    setSyncIcon('⟳', 'syncing');
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/watches?select=id,data,updated_at&order=updated_at.desc`, { headers: sbHeaders });
+    if (!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    if (rows.length === 0) {
+      // Cloud vide : on pousse le local
+      await pushAllToCloud();
+    } else {
+      // Fusionner : l'entrée la plus récente (cloud ou local) gagne
+      const cloudMap = {};
+      rows.forEach(r => { cloudMap[r.id] = { ...r.data, _updatedAt: r.updated_at }; });
+      const localMap = {};
+      watches.forEach(w => { localMap[w.id] = w; });
+      const allIds = new Set([...Object.keys(cloudMap), ...Object.keys(localMap).map(String)]);
+      const merged = [];
+      for (const id of allIds) {
+        const cloud = cloudMap[id];
+        const local = localMap[id];
+        if (cloud && local) {
+          const cloudTs = new Date(cloud._updatedAt || 0).getTime();
+          const localTs = local.addedAt || 0;
+          merged.push(cloudTs >= localTs ? { ...cloud } : { ...local });
+        } else if (cloud) {
+          merged.push({ ...cloud });
+        } else {
+          merged.push({ ...local });
+          await upsertWatch(local); // pousse le local manquant
+        }
+        delete merged[merged.length-1]._updatedAt;
+      }
+      watches = merged.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(watches));
+    }
+    setSyncIcon('✓', 'ok');
+    buildBrandTabs();
+    render();
+  } catch(e) {
+    console.error('Sync error:', e);
+    setSyncIcon('!', 'err');
+  }
+}
+
+async function upsertWatch(w) {
+  await fetch(`${SUPABASE_URL}/rest/v1/watches`, {
+    method: 'POST',
+    headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id: w.id, data: w, updated_at: new Date().toISOString() })
+  });
+}
+
+async function deleteFromCloud(id) {
+  await fetch(`${SUPABASE_URL}/rest/v1/watches?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders });
+}
+
+async function pushAllToCloud() {
+  if (watches.length === 0) return;
+  const rows = watches.map(w => ({ id: w.id, data: w, updated_at: new Date().toISOString() }));
+  await fetch(`${SUPABASE_URL}/rest/v1/watches`, {
+    method: 'POST',
+    headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify(rows)
+  });
+}
+
+function setSyncIcon(icon, state) {
+  const el = document.getElementById('syncBtn');
+  if (!el) return;
+  el.textContent = icon;
+  el.style.color = state === 'ok' ? 'var(--green)' : state === 'err' ? '#c0392b' : 'var(--muted)';
+}
+
+/* ── Save local + cloud ── */
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(watches));
+}
+
+async function saveAndSync(w) {
+  save();
+  try { await upsertWatch(w); setSyncIcon('✓', 'ok'); } catch(e) { setSyncIcon('!', 'err'); }
+}
+
+/* ── Init ── */
+window.addEventListener('DOMContentLoaded', () => {
+  if (!getApiKey()) {
+    document.getElementById('setupScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+  } else {
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'flex';
+    syncFromCloud();
+    setInterval(syncFromCloud, 30000); // resync toutes les 30s
+  }
+  document.getElementById('urlInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
+  buildBrandTabs();
+  render();
+});
 
 function toast(msg) {
   const t = document.getElementById('toast');
@@ -443,9 +621,16 @@ async function handleAdd() {
   document.getElementById('loadArea').innerHTML = `<div class="loading-row"><div class="spinner"></div><span class="loading-msg">Extraction en cours…</span></div>`;
 
   try {
+    const apiKey = getApiKey();
+    if (!apiKey) { openSetup(); return; }
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -495,6 +680,8 @@ Si une info est indisponible, mets "—". Ne mets RIEN d'autre que le JSON.`,
     };
     watches.unshift(w);
     save();
+    await upsertWatch(w);
+    setSyncIcon('✓', 'ok');
     document.getElementById('urlInput').value = '';
     closeAdd();
     buildBrandTabs();
@@ -506,10 +693,6 @@ Si une info est indisponible, mets "—". Ne mets RIEN d'autre que le JSON.`,
   }
   btn.disabled = false;
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleAdd(); });
-});
 
 /* ── Filter & sort ── */
 function getFiltered() {
@@ -639,6 +822,7 @@ function confirmDelete(id) {
   if (confirm('Supprimer cette montre ?')) {
     watches = watches.filter(x => x.id !== id);
     save();
+    deleteFromCloud(id).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
     closeDetail();
     buildBrandTabs();
     render();
@@ -649,7 +833,7 @@ function confirmDelete(id) {
 /* ── Favorites ── */
 function toggleFav(id) {
   const w = watches.find(x => x.id === id);
-  if (w) { w.favorite = !w.favorite; save(); render(); }
+  if (w) { w.favorite = !w.favorite; saveAndSync(w); render(); }
 }
 
 /* ── Edit sheet ── */
@@ -719,15 +903,13 @@ function saveEdit() {
   w.imageUrl = document.getElementById('em_img').value;
   w.url = document.getElementById('em_url').value;
   save();
+  upsertWatch(w).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
   closeEdit();
   buildBrandTabs();
   render();
   toast('Modifications enregistrées ✓');
 }
 
-/* Init */
-buildBrandTabs();
-render();
 </script>
 </body>
 </html>
