@@ -33,6 +33,8 @@
     --gold: #8a6c2a;
     --gold-bg: #fdf3dc;
     --green: #2d6a3f;
+    --dream: #6b3fa0;
+    --dream-bg: #f0e8ff;
     --radius: 14px;
     --radius-sm: 9px;
   }
@@ -51,6 +53,8 @@
       --gold: #c9a84c;
       --gold-bg: #2a2310;
       --green: #5db87a;
+      --dream: #b07de0;
+      --dream-bg: #1e1228;
     }
   }
   html, body { height: 100%; overflow: hidden; }
@@ -175,6 +179,9 @@
 
   /* ── Cards grid ── */
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  @media (min-width: 500px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+  }
   .card {
     background: var(--surface);
     border-radius: var(--radius);
@@ -185,6 +192,8 @@
     cursor: pointer;
   }
   .card.fav { border-color: var(--gold); }
+  .card.dream { border-color: var(--dream); }
+  .card.fav.dream { border-color: var(--dream); }
   .img-wrap { background: var(--surface2); aspect-ratio: 1; position: relative; overflow: hidden; }
   .img-wrap img { width: 100%; height: 100%; object-fit: contain; padding: 10px; }
   .img-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--hint); font-size: 40px; }
@@ -198,6 +207,16 @@
     transition: all 0.15s;
   }
   .fav-dot.active { background: var(--gold-bg); border-color: var(--gold); }
+  .dream-dot {
+    position: absolute; top: 8px; left: 8px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--surface);
+    border: 0.5px solid var(--border2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .dream-dot.active { background: var(--dream-bg); border-color: var(--dream); }
   .card-body { padding: 10px 12px 12px; }
   .card-brand { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 2px; }
   .card-name { font-size: 13px; font-weight: 500; color: var(--text); line-height: 1.3; margin-bottom: 5px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -215,6 +234,9 @@
     transition: border-color 0.15s;
   }
   .list-row.fav { border-color: var(--gold); }
+  .list-row.dream { border-color: var(--dream); }
+  .list-dream { width: 26px; height: 26px; border-radius: 50%; border: 0.5px solid var(--border2); background: none; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; }
+  .list-dream.active { background: var(--dream-bg); border-color: var(--dream); }
   .list-thumb { width: 52px; height: 52px; border-radius: var(--radius-sm); background: var(--surface2); flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; }
   .list-thumb img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
   .list-thumb-ph { font-size: 24px; color: var(--hint); }
@@ -293,6 +315,101 @@
   .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .edit-section { padding: 20px; }
   .edit-section h3 { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  /* ── Group separators ── */
+  .group-sep { margin: 18px 0 10px; display: flex; align-items: center; gap: 10px; }
+  .group-sep-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; }
+  .group-sep-line { flex: 1; height: 0.5px; background: var(--border2); }
+  .group-sep:first-child { margin-top: 0; }
+  .tag-pill {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 11px; font-weight: 500;
+    background: var(--surface2); color: var(--muted);
+    border: 0.5px solid var(--border2);
+    white-space: nowrap;
+  }
+  .tag-pill.luxe { background: var(--gold-bg); color: var(--gold); border-color: var(--gold); }
+  .tag-pill.mouvement { background: #e8f0e8; color: #2d6a3f; border-color: #b3cdb3; }
+  @media (prefers-color-scheme: dark) {
+    .tag-pill.mouvement { background: #1a2e1a; color: #5db87a; border-color: #2d4a2d; }
+  }
+  .card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 20px; margin-bottom: 12px; }
+
+  /* ── Tag picker in edit sheet ── */
+  .tag-group { margin-bottom: 14px; }
+  .tag-group-label { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 8px; display: block; }
+  .tag-options { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag-option {
+    padding: 5px 12px; border-radius: 99px;
+    border: 0.5px solid var(--border2);
+    background: var(--surface2); color: var(--muted);
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .tag-option.selected { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .tag-custom-row { display: flex; gap: 8px; margin-top: 8px; }
+  .tag-custom-input {
+    flex: 1; font-size: 13px; font-family: 'DM Sans', sans-serif;
+    padding: 7px 10px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2); background: var(--surface2);
+    color: var(--text); -webkit-appearance: none;
+  }
+  .tag-custom-input:focus { outline: none; border-color: var(--accent); }
+  .tag-add-btn {
+    padding: 7px 12px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border2); background: var(--surface2);
+    color: var(--text); font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  .tag-add-btn:hover { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .custom-tags-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .custom-tag-chip {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 99px;
+    background: var(--surface2); border: 0.5px solid var(--border2);
+    font-size: 12px; color: var(--text);
+  }
+  .custom-tag-rm { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px; line-height: 1; padding: 0; }
+
+  /* ── Variants ── */
+  .variant-dots { display: flex; justify-content: center; gap: 5px; padding: 6px 0 2px; }
+  .variant-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border2); transition: background 0.15s; cursor: pointer; border: none; padding: 0; }
+  .variant-dot.active { background: var(--text); }
+  .variant-nav { display: flex; align-items: center; justify-content: space-between; padding: 8px 20px 0; }
+  .variant-nav-btn { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--muted); flex-shrink: 0; }
+  .variant-nav-btn:disabled { opacity: 0.3; cursor: default; }
+  .variant-counter { font-size: 12px; color: var(--muted); }
+  .variant-badge { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.55); color: #fff; border-radius: 99px; padding: 2px 8px; font-size: 10px; font-weight: 500; white-space: nowrap; pointer-events: none; }
+  .filter-panel {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .filter-panel.open { opacity: 1; pointer-events: all; }
+  .filter-panel-inner {
+    background: var(--surface);
+    border-radius: var(--radius) var(--radius) 0 0;
+    width: 100%; max-height: 88dvh; overflow-y: auto;
+    padding: 0 20px calc(env(safe-area-inset-bottom,0px) + 20px);
+    transform: translateY(20px); transition: transform 0.25s ease;
+  }
+  .filter-panel.open .filter-panel-inner { transform: translateY(0); }
+  .filter-section { margin-bottom: 20px; }
+  .filter-section-title { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin-bottom: 10px; display: block; }
+  .filter-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .fchip {
+    padding: 6px 14px; border-radius: 99px;
+    border: 0.5px solid var(--border2);
+    background: var(--surface2); color: var(--muted);
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .fchip.active { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+  .filter-active-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); display: inline-block; margin-left: 4px; vertical-align: middle; }
 
   /* ── Toast ── */
   .toast {
@@ -383,26 +500,34 @@
         </div>
       </div>
     </div>
-    <!-- Filter chips -->
+    <!-- Filter row -->
     <div class="tabs" id="filterTabs" style="padding-bottom:10px;">
       <button class="tab active" onclick="setTab('all',this)">Toutes</button>
       <button class="tab" onclick="setTab('fav',this)">⭐ Favoris</button>
-      <span id="brandTabs"></span>
+      <button class="tab" onclick="setTab('dream',this)">💜 Rêve</button>
     </div>
   </div>
 
   <!-- Scrollable content -->
   <div class="content" id="content">
-    <!-- sort row -->
     <div class="sort-row">
-      <span class="sort-label">Trier par</span>
-      <select class="sort-select" id="sortSel" onchange="render()">
-        <option value="date">Plus récent</option>
-        <option value="price_asc">Prix ↑</option>
-        <option value="price_desc">Prix ↓</option>
-        <option value="brand">Marque A–Z</option>
-      </select>
+      <div style="display:flex;gap:6px;">
+        <select class="sort-select" id="sortSel" onchange="render()">
+          <option value="date">Plus récent</option>
+          <option value="price_asc">Prix ↑</option>
+          <option value="price_desc">Prix ↓</option>
+          <option value="price_range">Tranche de prix</option>
+          <option value="brand">Marque A–Z</option>
+          <option value="mouvement">Mouvement</option>
+          <option value="type">Type</option>
+        </select>
+        <button onclick="openFilterPanel()" id="filterBtn" style="padding:4px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:var(--surface2);color:var(--muted);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;display:flex;align-items:center;gap:4px;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filtres<span id="filterDot" style="display:none" class="filter-active-dot"></span>
+        </button>
+      </div>
     </div>
+    <div id="activeFiltersRow" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
     <div id="watchList"></div>
   </div>
 
@@ -433,6 +558,79 @@
   <div class="sheet-inner" id="editInner"></div>
 </div>
 
+<!-- Filter panel -->
+<div class="filter-panel" id="filterPanel" onclick="closeFilterPanel(event)">
+  <div class="filter-panel-inner">
+    <div class="sheet-handle"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0 20px;">
+      <span style="font-family:'DM Serif Display',serif;font-size:20px;">Filtres</span>
+      <div style="display:flex;gap:8px;">
+        <button onclick="resetFilters()" style="padding:6px 12px;border-radius:var(--radius-sm);border:0.5px solid var(--border2);background:none;color:var(--muted);font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;">Réinitialiser</button>
+        <button onclick="closeFilterPanel()" style="padding:6px 14px;border-radius:var(--radius-sm);border:none;background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:500;font-family:'DM Sans',sans-serif;cursor:pointer;">Appliquer</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Marque</span>
+      <div class="filter-chips" id="fp-brands"></div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Tranche de prix</span>
+      <div class="filter-chips" id="fp-price">
+        <button class="fchip" data-val="0-100" onclick="toggleFChip(this,'price')">Moins de 100 €</button>
+        <button class="fchip" data-val="100-250" onclick="toggleFChip(this,'price')">100 – 250 €</button>
+        <button class="fchip" data-val="250-500" onclick="toggleFChip(this,'price')">250 – 500 €</button>
+        <button class="fchip" data-val="500-1000" onclick="toggleFChip(this,'price')">500 – 1000 €</button>
+        <button class="fchip" data-val="1000+" onclick="toggleFChip(this,'price')">1000 € +</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Mouvement</span>
+      <div class="filter-chips" id="fp-mouvement">
+        <button class="fchip" data-val="Quartz" onclick="toggleFChip(this,'tag')">Quartz</button>
+        <button class="fchip" data-val="Méca-quartz" onclick="toggleFChip(this,'tag')">Méca-quartz</button>
+        <button class="fchip" data-val="Mécanique" onclick="toggleFChip(this,'tag')">Mécanique</button>
+        <button class="fchip" data-val="Automatique" onclick="toggleFChip(this,'tag')">Automatique</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Type</span>
+      <div class="filter-chips" id="fp-type">
+        <button class="fchip" data-val="Sport" onclick="toggleFChip(this,'tag')">Sport</button>
+        <button class="fchip" data-val="Field" onclick="toggleFChip(this,'tag')">Field</button>
+        <button class="fchip" data-val="Dress" onclick="toggleFChip(this,'tag')">Dress</button>
+        <button class="fchip" data-val="Chronographe" onclick="toggleFChip(this,'tag')">Chronographe</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Spécificités</span>
+      <div class="filter-chips" id="fp-spec">
+        <button class="fchip" data-val="Bracelet intégré" onclick="toggleFChip(this,'tag')">Bracelet intégré</button>
+        <button class="fchip" data-val="Luminescent" onclick="toggleFChip(this,'tag')">Luminescent</button>
+        <button class="fchip" data-val="Date" onclick="toggleFChip(this,'tag')">Date</button>
+        <button class="fchip" data-val="Phase lunaire" onclick="toggleFChip(this,'tag')">Phase lunaire</button>
+        <button class="fchip" data-val="Fond transparent" onclick="toggleFChip(this,'tag')">Fond transparent</button>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <span class="filter-section-title">Autres tags</span>
+      <div class="filter-chips" id="fp-luxe">
+        <button class="fchip" data-val="Luxe" onclick="toggleFChip(this,'tag')">✨ Luxe</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Variant add sheet -->
+<div class="sheet" id="variantSheet" onclick="closeVariantSheet(event)">
+  <div class="sheet-inner" id="variantInner"></div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -447,6 +645,39 @@ let view = 'grid';
 let activeTab = 'all';
 let editingId = null;
 let syncing = false;
+
+/* ── Tag definitions (extensible per category) ── */
+const BASE_MOUVEMENT = ['Quartz','Méca-quartz','Mécanique','Automatique'];
+const BASE_TYPE = ['Sport','Field','Dress','Chronographe'];
+const BASE_SPEC = ['Bracelet intégré','Luminescent','Date','Phase lunaire','Fond transparent'];
+
+function loadCatTags(cat, base) {
+  try { return JSON.parse(localStorage.getItem('wc_tags_'+cat) || 'null') || [...base]; } catch(e) { return [...base]; }
+}
+function saveCatTags(cat, list) { localStorage.setItem('wc_tags_'+cat, JSON.stringify(list)); }
+
+let TAGS_MOUVEMENT = loadCatTags('mouvement', BASE_MOUVEMENT);
+let TAGS_TYPE      = loadCatTags('type',      BASE_TYPE);
+let TAGS_SPEC      = loadCatTags('spec',       BASE_SPEC);
+
+/* ── Filter state ── */
+let filterTags = new Set();
+let filterPrice = null;
+let filterBrands = new Set();
+
+/* ── Auto-tag Luxe ── */
+function computeTags(w) {
+  const tags = Array.isArray(w.tags) ? [...w.tags] : [];
+  const p = parsePrice(w.price);
+  const hasLuxe = tags.includes('Luxe');
+  if (!isNaN(p) && p >= 1000 && !hasLuxe) tags.push('Luxe');
+  if (!isNaN(p) && p < 1000 && hasLuxe) tags.splice(tags.indexOf('Luxe'), 1);
+  return tags;
+}
+
+function getAllTags(w) {
+  return computeTags(w);
+}
 
 /* ── API Anthropic key ── */
 function getApiKey() { return localStorage.getItem(API_KEY_STORAGE) || ''; }
@@ -595,10 +826,88 @@ function setTab(id, el) {
 
 function buildBrandTabs() {
   const brands = [...new Set(watches.map(w => w.brand).filter(b => b && b !== '—'))].sort();
-  const wrap = document.getElementById('brandTabs');
+  const wrap = document.getElementById('fp-brands');
+  if (!wrap) return;
   wrap.innerHTML = brands.map(b =>
-    `<button class="tab" onclick="setTab('brand:${b}',this)">${b}</button>`
+    `<button class="fchip${filterBrands.has(b)?' active':''}" data-val="${esc(b)}" onclick="toggleFChip(this,'brand')">${esc(b)}</button>`
   ).join('');
+}
+
+/* ── Filter panel ── */
+function openFilterPanel() {
+  buildBrandTabs();
+  // Rebuild tag chips dynamically so newly added tags appear
+  document.getElementById('fp-mouvement').innerHTML =
+    TAGS_MOUVEMENT.map(t => `<button class="fchip${filterTags.has(t)?' active':''}" data-val="${esc(t)}" onclick="toggleFChip(this,'tag')">${esc(t)}</button>`).join('');
+  document.getElementById('fp-type').innerHTML =
+    TAGS_TYPE.map(t => `<button class="fchip${filterTags.has(t)?' active':''}" data-val="${esc(t)}" onclick="toggleFChip(this,'tag')">${esc(t)}</button>`).join('');
+  document.getElementById('fp-spec').innerHTML =
+    TAGS_SPEC.map(t => `<button class="fchip${filterTags.has(t)?' active':''}" data-val="${esc(t)}" onclick="toggleFChip(this,'tag')">${esc(t)}</button>`).join('');
+  // Sync price and brand chips
+  document.querySelectorAll('#fp-price .fchip').forEach(c => c.classList.toggle('active', filterPrice === c.dataset.val));
+  document.querySelectorAll('#fp-brands .fchip').forEach(c => c.classList.toggle('active', filterBrands.has(c.dataset.val)));
+  document.getElementById('filterPanel').classList.add('open');
+}
+
+function closeFilterPanel(e) {
+  if (!e || e.target === document.getElementById('filterPanel')) {
+    document.getElementById('filterPanel').classList.remove('open');
+    updateActiveFiltersRow();
+    render();
+  }
+}
+
+function toggleFChip(el, kind) {
+  const v = el.dataset.val;
+  if (kind === 'price') {
+    if (filterPrice === v) { filterPrice = null; el.classList.remove('active'); }
+    else {
+      document.querySelectorAll('#fp-price .fchip').forEach(c => c.classList.remove('active'));
+      filterPrice = v; el.classList.add('active');
+    }
+  } else if (kind === 'brand') {
+    if (filterBrands.has(v)) { filterBrands.delete(v); el.classList.remove('active'); }
+    else { filterBrands.add(v); el.classList.add('active'); }
+  } else {
+    if (filterTags.has(v)) { filterTags.delete(v); el.classList.remove('active'); }
+    else { filterTags.add(v); el.classList.add('active'); }
+  }
+}
+
+function resetFilters() {
+  filterTags.clear(); filterPrice = null; filterBrands.clear();
+  document.querySelectorAll('.fchip').forEach(c => c.classList.remove('active'));
+  updateActiveFiltersRow();
+  render();
+}
+
+function updateActiveFiltersRow() {
+  const row = document.getElementById('activeFiltersRow');
+  const dot = document.getElementById('filterDot');
+  const active = [];
+  if (filterPrice) active.push({ label: filterPrice.replace('-','–') + ' €', val: filterPrice, kind: 'price' });
+  filterBrands.forEach(b => active.push({ label: b, val: b, kind: 'brand' }));
+  filterTags.forEach(t => active.push({ label: t, val: t, kind: 'tag' }));
+  dot.style.display = active.length ? 'inline-block' : 'none';
+  if (!active.length) { row.style.display = 'none'; return; }
+  row.style.display = 'flex';
+  row.innerHTML = active.map(a =>
+    `<span class="tag-pill" style="cursor:pointer;" onclick="removeActiveFilter('${esc(a.val)}','${a.kind}')">${esc(a.label)} ✕</span>`
+  ).join('');
+}
+
+function removeActiveFilter(val, kind) {
+  if (kind === 'price') filterPrice = null;
+  else if (kind === 'brand') filterBrands.delete(val);
+  else filterTags.delete(val);
+  document.querySelectorAll('.fchip').forEach(c => {
+    const v = c.dataset.val;
+    if (c.closest('#fp-price')) c.classList.toggle('active', filterPrice === v);
+    else if (c.closest('#fp-brands')) c.classList.toggle('active', filterBrands.has(v));
+    else c.classList.toggle('active', filterTags.has(v));
+  });
+  updateActiveFiltersRow();
+  render();
 }
 
 /* ── Add bar toggle ── */
@@ -643,22 +952,27 @@ async function handleAdd() {
         model: 'claude-sonnet-4-6',
         max_tokens: 1000,
         tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: `Tu es un assistant spécialisé dans l'extraction d'informations horlogères.
-L'utilisateur te donne une URL de page montre. Fais une recherche web pour accéder à la page, puis retourne UNIQUEMENT un objet JSON valide (sans backticks, sans texte avant/après) avec ces champs:
-{
-  "model": "nom complet du modèle",
-  "brand": "marque",
-  "price": "prix avec devise ex: 195 EUR",
-  "movement": "type de mouvement ex: Quartz, Automatique ETA 2824",
-  "diameter": "diamètre ex: 43mm",
-  "caseMaterial": "matériau boîtier ex: Acier inoxydable 316L",
-  "glassMaterial": "matériau verre ex: Cristal minéral, Saphir",
-  "strapMaterial": "matériau bracelet ex: Nylon, Cuir",
-  "waterResistance": "étanchéité ex: 50m / 5 ATM",
-  "country": "pays d'origine de la marque ex: États-Unis, Suisse",
-  "imageUrl": "URL directe de la photo principale (doit commencer par https://)"
-}
-Si une info est indisponible, mets "—". Ne mets RIEN d'autre que le JSON.`,
+        system: `Tu es un assistant spécialisé dans l'extraction d'informations horlogères à partir de pages web.
+
+MÉTHODE : Fais une recherche web avec l'URL fournie pour lire le contenu de la page produit.
+
+PRIORITÉ : Les informations présentes explicitement sur la page ont toujours la priorité absolue. En cas d'absence, tu peux faire des déductions raisonnables et évidentes, mais jamais inventer.
+
+RÈGLES PAR CHAMP :
+- model : nom exact du modèle tel qu'écrit sur la page
+- brand : marque du produit
+- price : prix affiché avec devise
+- movement : référence exacte si indiquée (ex: "Miyota 9015"). Si seul le type est mentionné (ex: "mouvement automatique"), indique-le. Ne déduis pas la marque du mouvement depuis le pays d'origine.
+- diameter : diamètre du boîtier
+- caseMaterial : matériau du boîtier tel qu'indiqué. Tu peux déduire "Acier inoxydable" si la page dit "stainless steel".
+- glassMaterial : matériau du verre tel qu'indiqué. Ne suppose jamais "saphir" si ce n'est pas écrit — c'est une info commerciale importante.
+- strapMaterial : matériau du bracelet
+- waterResistance : résistance à l'eau
+- country : pays d'origine de la marque. Tu peux déduire depuis "Swiss Made", le siège social mentionné, etc.
+- imageUrl : URL directe de la photo principale (https://)
+
+Si une info est vraiment introuvable et non déductible, mets "—".
+Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`,
         messages: [{ role: 'user', content: `Extrais les informations horlogères de cette page: ${url}` }]
       })
     });
@@ -706,19 +1020,92 @@ Si une info est indisponible, mets "—". Ne mets RIEN d'autre que le JSON.`,
 function getFiltered() {
   let list = [...watches];
   if (activeTab === 'fav') list = list.filter(w => w.favorite);
-  else if (activeTab.startsWith('brand:')) {
-    const b = activeTab.slice(6);
-    list = list.filter(w => w.brand === b);
+  else if (activeTab === 'dream') list = list.filter(w => w.dream);
+  if (filterBrands.size > 0) list = list.filter(w => filterBrands.has(w.brand));
+
+  // Price filter
+  if (filterPrice) {
+    list = list.filter(w => {
+      const p = parsePrice(w.price);
+      if (isNaN(p)) return false;
+      if (filterPrice === '0-100') return p < 100;
+      if (filterPrice === '100-250') return p >= 100 && p < 250;
+      if (filterPrice === '250-500') return p >= 250 && p < 500;
+      if (filterPrice === '500-1000') return p >= 500 && p < 1000;
+      if (filterPrice === '1000+') return p >= 1000;
+      return true;
+    });
   }
+
+  // Tag filter (AND logic: must have all selected tags)
+  if (filterTags.size > 0) {
+    list = list.filter(w => {
+      const wTags = getAllTags(w);
+      return [...filterTags].every(t => wTags.includes(t));
+    });
+  }
+
   const sort = document.getElementById('sortSel').value;
-  if (sort === 'price_asc') list.sort((a,b) => (parseFloat(a.price)||0) - (parseFloat(b.price)||0));
-  else if (sort === 'price_desc') list.sort((a,b) => (parseFloat(b.price)||0) - (parseFloat(a.price)||0));
+  const PRICE_RANGES = ['0-100','100-250','250-500','500-1000','1000+'];
+  function priceRange(w) {
+    const p = parsePrice(w.price);
+    if (isNaN(p)) return 5;
+    if (p < 100) return 0;
+    if (p < 250) return 1;
+    if (p < 500) return 2;
+    if (p < 1000) return 3;
+    return 4;
+  }
+  function firstTag(w, list) {
+    const wt = getAllTags(w);
+    const idx = list.findIndex(t => wt.includes(t));
+    return idx === -1 ? list.length : idx;
+  }
+  if (sort === 'price_asc') list.sort((a,b) => (parsePrice(a.price)||0) - (parsePrice(b.price)||0));
+  else if (sort === 'price_desc') list.sort((a,b) => (parsePrice(b.price)||0) - (parsePrice(a.price)||0));
+  else if (sort === 'price_range') list.sort((a,b) => priceRange(a) - priceRange(b) || (parsePrice(a.price)||0) - (parsePrice(b.price)||0));
   else if (sort === 'brand') list.sort((a,b) => (a.brand||'').localeCompare(b.brand||''));
+  else if (sort === 'mouvement') list.sort((a,b) => firstTag(a, TAGS_MOUVEMENT) - firstTag(b, TAGS_MOUVEMENT));
+  else if (sort === 'type') list.sort((a,b) => firstTag(a, TAGS_TYPE) - firstTag(b, TAGS_TYPE));
   else list.sort((a,b) => b.addedAt - a.addedAt);
   return list;
 }
 
-/* ── Render ── */
+function parsePrice(str) {
+  if (!str) return NaN;
+  let s = String(str).replace(/[^\d,\.]/g, ''); // keep only digits, dots, commas
+  // Detect format: if comma appears after dot → dot is thousands sep → remove dots, replace comma with dot
+  // e.g. "1.290,00" → "1290.00"
+  if (/\.\d{3}/.test(s) && s.includes(',')) {
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else {
+    // comma as thousands sep: "1,290.00" → "1290.00"
+    s = s.replace(/,(\d{3})/g, '$1').replace(',', '.');
+  }
+  return parseFloat(s);
+}
+function groupKey(w, sort) {
+  const p = parsePrice(w.price);
+  if (sort === 'price_range') {
+    if (isNaN(p)) return '—';
+    if (p < 100)  return 'Moins de 100 €';
+    if (p < 250)  return '100 – 250 €';
+    if (p < 500)  return '250 – 500 €';
+    if (p < 1000) return '500 – 1 000 €';
+    return '1 000 € et plus';
+  }
+  if (sort === 'brand') return w.brand || '—';
+  if (sort === 'mouvement') {
+    const t = getAllTags(w).find(t => TAGS_MOUVEMENT.includes(t));
+    return t || '—';
+  }
+  if (sort === 'type') {
+    const t = getAllTags(w).find(t => TAGS_TYPE.includes(t));
+    return t || '—';
+  }
+  return null; // no grouping
+}
+
 function render() {
   const list = getFiltered();
   const pill = document.getElementById('countPill');
@@ -731,10 +1118,34 @@ function render() {
     return;
   }
 
+  const sort = document.getElementById('sortSel').value;
+
+  // Build groups
+  const groups = [];
+  let lastKey = undefined;
+  list.forEach(w => {
+    const key = groupKey(w, sort);
+    if (key !== null && key !== lastKey) {
+      groups.push({ key, items: [] });
+      lastKey = key;
+    } else if (key === null && groups.length === 0) {
+      groups.push({ key: null, items: [] });
+    }
+    groups[groups.length - 1].items.push(w);
+  });
+
+  const useGroups = groups.length > 1 || (groups.length === 1 && groups[0].key !== null);
+
   if (view === 'grid') {
-    cont.innerHTML = `<div class="grid">${list.map(w => cardHTML(w)).join('')}</div>`;
+    cont.innerHTML = groups.map((g, i) => `
+      ${useGroups ? `<div class="group-sep${i===0?' style="margin-top:0"':''}"><span class="group-sep-label">${esc(g.key||'—')}</span><span class="group-sep-line"></span></div>` : ''}
+      <div class="grid" style="margin-bottom:${useGroups?'4px':'0'}">${g.items.map(w => cardHTML(w)).join('')}</div>
+    `).join('');
   } else {
-    cont.innerHTML = `<div class="list">${list.map(w => rowHTML(w)).join('')}</div>`;
+    cont.innerHTML = groups.map((g, i) => `
+      ${useGroups ? `<div class="group-sep${i===0?' style="margin-top:0"':''}"><span class="group-sep-label">${esc(g.key||'—')}</span><span class="group-sep-line"></span></div>` : ''}
+      <div class="list" style="margin-bottom:${useGroups?'4px':'0'}">${g.items.map(w => rowHTML(w)).join('')}</div>
+    `).join('');
   }
 }
 
@@ -747,22 +1158,41 @@ function imgTag(w, cls) {
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
+function tagsHTML(w, cls='tag-pill') {
+  const tags = getAllTags(w);
+  if (!tags.length) return '';
+  return tags.map(t => `<span class="${cls}${t==='Luxe'?' luxe':TAGS_MOUVEMENT.includes(t)?' mouvement':''}">${t}</span>`).join('');
+}
+
+function getVariants(w) {
+  // Main watch is variant 0, extras in w.variants[]
+  const main = { model: w.model, brand: w.brand, price: w.price, imageUrl: w.imageUrl, url: w.url, movement: w.movement, diameter: w.diameter, caseMaterial: w.caseMaterial, glassMaterial: w.glassMaterial, strapMaterial: w.strapMaterial, waterResistance: w.waterResistance, country: w.country };
+  return [main, ...(Array.isArray(w.variants) ? w.variants : [])];
+}
+
 function cardHTML(w) {
-  return `<div class="card${w.favorite?' fav':''}" onclick="openDetail(${w.id})">
+  const tags = getAllTags(w);
+  const variants = getVariants(w);
+  const hasVariants = variants.length > 1;
+  return `<div class="card${w.favorite?' fav':''}${w.dream?' dream':''}" onclick="openDetail(${w.id})">
     <div class="img-wrap">
       ${imgTag(w,'')}
+      <div class="dream-dot${w.dream?' active':''}" onclick="event.stopPropagation();toggleDream(${w.id})" title="Rêve">💜</div>
       <div class="fav-dot${w.favorite?' active':''}" onclick="event.stopPropagation();toggleFav(${w.id})" title="Favori">${w.favorite ? '⭐' : '☆'}</div>
+      ${hasVariants ? `<div class="variant-badge">${variants.length} variantes</div>` : ''}
     </div>
+    ${hasVariants ? `<div class="variant-dots">${variants.map((_,i) => `<div class="variant-dot${i===0?' active':''}"></div>`).join('')}</div>` : ''}
     <div class="card-body">
       <div class="card-brand">${esc(w.brand)}</div>
       <div class="card-name">${esc(w.model)}</div>
       <div class="card-price">${esc(w.price)}</div>
+      ${tags.length ? `<div class="card-tags">${tagsHTML(w)}</div>` : ''}
     </div>
   </div>`;
 }
 
 function rowHTML(w) {
-  return `<div class="list-row${w.favorite?' fav':''}" onclick="openDetail(${w.id})">
+  return `<div class="list-row${w.favorite?' fav':''}${w.dream?' dream':''}" onclick="openDetail(${w.id})">
     <div class="list-thumb">
       ${w.imageUrl && w.imageUrl.startsWith('http') ? `<img src="${w.imageUrl}" loading="lazy" onerror="this.outerHTML='<span class=list-thumb-ph>⌚</span>'">` : `<span class="list-thumb-ph">⌚</span>`}
     </div>
@@ -773,47 +1203,73 @@ function rowHTML(w) {
     </div>
     <div class="list-right">
       <div class="list-price">${esc(w.price)}</div>
-      <button class="list-fav${w.favorite?' active':''}" onclick="event.stopPropagation();toggleFav(${w.id})">${w.favorite?'⭐':'☆'}</button>
+      <div style="display:flex;gap:4px;">
+        <button class="list-dream${w.dream?' active':''}" onclick="event.stopPropagation();toggleDream(${w.id})">💜</button>
+        <button class="list-fav${w.favorite?' active':''}" onclick="event.stopPropagation();toggleFav(${w.id})">${w.favorite?'⭐':'☆'}</button>
+      </div>
     </div>
   </div>`;
 }
 
 /* ── Detail sheet ── */
-function openDetail(id) {
+let detailVariantIdx = 0;
+
+function openDetail(id, variantIdx) {
   const w = watches.find(x => x.id === id);
   if (!w) return;
+  const variants = getVariants(w);
+  const vi = variantIdx !== undefined ? variantIdx : 0;
+  detailVariantIdx = vi;
+  const v = variants[vi];
+  const hasMultiple = variants.length > 1;
   const inner = document.getElementById('detailInner');
+
+  const imgUrl = v.imageUrl && v.imageUrl.startsWith('http') ? v.imageUrl : null;
+
   inner.innerHTML = `
     <div class="sheet-handle"></div>
     <div class="sheet-header">
       <div>
-        <div class="sheet-brand">${esc(w.brand)} · ${esc(w.country)}</div>
-        <div class="sheet-name">${esc(w.model)}</div>
+        <div class="sheet-brand">${esc(v.brand||w.brand)} · ${esc(v.country||w.country)}</div>
+        <div class="sheet-name">${esc(v.model||w.model)}</div>
       </div>
       <button class="sheet-close" onclick="closeDetail()">✕</button>
     </div>
+    ${hasMultiple ? `
+    <div class="variant-nav">
+      <button class="variant-nav-btn" onclick="openDetail(${w.id},${vi-1})" ${vi===0?'disabled':''}>‹</button>
+      <span class="variant-counter">Variante ${vi+1} / ${variants.length}</span>
+      <button class="variant-nav-btn" onclick="openDetail(${w.id},${vi+1})" ${vi===variants.length-1?'disabled':''}>›</button>
+    </div>` : ''}
     <div class="sheet-img">
-      ${w.imageUrl && w.imageUrl.startsWith('http') ? `<img src="${w.imageUrl}" alt="${esc(w.model)}" onerror="this.outerHTML='<span style=font-size:60px;color:var(--hint)>⌚</span>'">` : '<span style="font-size:60px;color:var(--hint)">⌚</span>'}
+      ${imgUrl ? `<img src="${imgUrl}" alt="${esc(v.model||w.model)}" onerror="this.outerHTML='<span style=font-size:60px;color:var(--hint)>⌚</span>'">` : '<span style="font-size:60px;color:var(--hint)">⌚</span>'}
     </div>
-    <div class="sheet-price">${esc(w.price)}</div>
+    <div class="sheet-price">${esc(v.price||w.price)}</div>
+    ${getAllTags(w).length ? `<div class="tags-row">${tagsHTML(w)}</div>` : ''}
     <div class="specs-grid">
-      <div class="spec-cell"><div class="spec-k">Mouvement</div><div class="spec-v">${esc(w.movement)}</div></div>
-      <div class="spec-cell"><div class="spec-k">Diamètre</div><div class="spec-v">${esc(w.diameter)}</div></div>
-      <div class="spec-cell"><div class="spec-k">Boîtier</div><div class="spec-v">${esc(w.caseMaterial)}</div></div>
-      <div class="spec-cell"><div class="spec-k">Verre</div><div class="spec-v">${esc(w.glassMaterial)}</div></div>
-      <div class="spec-cell"><div class="spec-k">Bracelet</div><div class="spec-v">${esc(w.strapMaterial)}</div></div>
-      <div class="spec-cell"><div class="spec-k">Étanchéité</div><div class="spec-v">${esc(w.waterResistance)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Mouvement</div><div class="spec-v">${esc(v.movement||w.movement)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Diamètre</div><div class="spec-v">${esc(v.diameter||w.diameter)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Boîtier</div><div class="spec-v">${esc(v.caseMaterial||w.caseMaterial)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Verre</div><div class="spec-v">${esc(v.glassMaterial||w.glassMaterial)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Bracelet</div><div class="spec-v">${esc(v.strapMaterial||w.strapMaterial)}</div></div>
+      <div class="spec-cell"><div class="spec-k">Étanchéité</div><div class="spec-v">${esc(v.waterResistance||w.waterResistance)}</div></div>
     </div>
     <div class="sheet-fav-row">
-      <div class="fav-toggle" onclick="toggleFav(${w.id});openDetail(${w.id})">
+      <div class="fav-toggle" onclick="toggleFav(${w.id});openDetail(${w.id},${vi})">
         <span class="fav-toggle-icon">${w.favorite?'⭐':'☆'}</span>
         <span style="font-size:14px;font-weight:500;">${w.favorite?'Favori':'Ajouter aux favoris'}</span>
       </div>
+      <div class="fav-toggle" onclick="toggleDream(${w.id});openDetail(${w.id},${vi})">
+        <span class="fav-toggle-icon">💜</span>
+        <span style="font-size:14px;font-weight:500;color:${w.dream?'var(--dream)':'inherit'}">${w.dream?'Rêve':'Ajouter aux rêves'}</span>
+      </div>
     </div>
     <div class="sheet-actions">
-      ${w.url ? `<button class="sheet-btn" onclick="window.open('${esc(w.url)}','_blank')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Voir la page</button>` : ''}
-      <button class="sheet-btn primary" onclick="closeDetail();openEdit(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier</button>
-      <button class="sheet-btn danger" onclick="confirmDelete(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>
+      ${v.url ? `<button class="sheet-btn" onclick="window.open('${esc(v.url)}','_blank')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Voir</button>` : ''}
+      <button class="sheet-btn" onclick="openAddVariant(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Variante</button>
+      <button class="sheet-btn primary" onclick="closeDetail();openEdit(${w.id},${vi})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Modifier</button>
+      ${vi > 0 ? `<button class="sheet-btn danger" onclick="confirmDeleteVariant(${w.id},${vi})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>` :
+      `<button class="sheet-btn danger" onclick="confirmDelete(${w.id})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg></button>`}
     </div>
   `;
   document.getElementById('detailSheet').classList.add('open');
@@ -825,60 +1281,221 @@ function closeDetail(e) {
   }
 }
 
-function confirmDelete(id) {
-  if (confirm('Supprimer cette montre ?')) {
-    watches = watches.filter(x => x.id !== id);
-    save();
-    deleteFromCloud(id).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
-    closeDetail();
-    buildBrandTabs();
-    render();
-    toast('Montre supprimée');
+/* ── Add variant ── */
+let addingVariantForId = null;
+
+function openAddVariant(watchId) {
+  addingVariantForId = watchId;
+  const inner = document.getElementById('variantInner');
+  inner.innerHTML = `
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div><div class="sheet-brand">Nouvelle variante</div><div class="sheet-name">Ajouter par URL</div></div>
+      <button class="sheet-close" onclick="closeVariantSheet()">✕</button>
+    </div>
+    <div style="padding:20px;">
+      <div class="edit-field">
+        <label class="edit-label">URL de la variante</label>
+        <div style="display:flex;gap:8px;">
+          <input class="edit-input" id="variantUrlInput" type="url" placeholder="https://…" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();extractVariant();}">
+          <button class="sheet-btn primary" onclick="extractVariant()" id="variantExtractBtn" style="flex:0;white-space:nowrap;padding:11px 14px;">Extraire</button>
+        </div>
+      </div>
+      <div id="variantLoadArea"></div>
+    </div>
+  `;
+  document.getElementById('detailSheet').classList.remove('open');
+  document.getElementById('variantSheet').classList.add('open');
+  setTimeout(() => document.getElementById('variantUrlInput')?.focus(), 100);
+}
+
+function closeVariantSheet(e) {
+  if (!e || e.target === document.getElementById('variantSheet')) {
+    document.getElementById('variantSheet').classList.remove('open');
   }
 }
 
-/* ── Favorites ── */
+async function extractVariant() {
+  const url = document.getElementById('variantUrlInput').value.trim();
+  if (!url) return;
+  const btn = document.getElementById('variantExtractBtn');
+  btn.disabled = true;
+  document.getElementById('variantLoadArea').innerHTML = `<div class="loading-row"><div class="spinner"></div><span class="loading-msg">Extraction en cours…</span></div>`;
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) { openSetup(); return; }
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        system: `Tu es un assistant spécialisé dans l'extraction d'informations horlogères à partir de pages web. Fais une recherche web avec l'URL fournie. Priorité aux informations explicites de la page ; déductions raisonnables acceptées (ex: "stainless steel" → "Acier inoxydable", "Swiss Made" → Suisse), mais ne suppose jamais le matériau du verre ni la référence du mouvement sans preuve. Si introuvable, mets "—". Retourne UNIQUEMENT un objet JSON valide (sans backticks) : {"model","brand","price","movement","diameter","caseMaterial","glassMaterial","strapMaterial","waterResistance","country","imageUrl"}.`,
+        messages: [{ role: 'user', content: `Extrais les informations horlogères de cette page: ${url}` }]
+      })
+    });
+    const data = await resp.json();
+    const textBlock = data.content && data.content.find(b => b.type === 'text');
+    if (!textBlock) throw new Error('no text');
+    const raw = textBlock.text.replace(/```json|```/g, '').trim();
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('no json');
+    const info = JSON.parse(match[0]);
+    const variant = { url, model: info.model||'—', brand: info.brand||'—', price: info.price||'—', movement: info.movement||'—', diameter: info.diameter||'—', caseMaterial: info.caseMaterial||'—', glassMaterial: info.glassMaterial||'—', strapMaterial: info.strapMaterial||'—', waterResistance: info.waterResistance||'—', country: info.country||'—', imageUrl: info.imageUrl||'' };
+
+    const w = watches.find(x => x.id === addingVariantForId);
+    if (w) {
+      if (!Array.isArray(w.variants)) w.variants = [];
+      w.variants.push(variant);
+      save();
+      await upsertWatch(w);
+      setSyncIcon('✓', 'ok');
+      render();
+      closeVariantSheet();
+      openDetail(w.id, getVariants(w).length - 1);
+      toast('Variante ajoutée ✓');
+    }
+  } catch(e) {
+    document.getElementById('variantLoadArea').innerHTML = `<div class="loading-row"><span class="loading-msg" style="color:#c0392b">Erreur — vérifiez l'URL</span></div>`;
+    console.error(e);
+  }
+  btn.disabled = false;
+}
+
+function confirmDeleteVariant(watchId, variantIdx) {
+  const actions = document.querySelector('#detailInner .sheet-actions');
+  if (!actions) return;
+  actions.innerHTML = `
+    <span style="font-size:13px;color:var(--muted);flex:1;display:flex;align-items:center;">Supprimer cette variante ?</span>
+    <button class="sheet-btn" onclick="openDetail(${watchId},${variantIdx})">Annuler</button>
+    <button class="sheet-btn danger" onclick="doDeleteVariant(${watchId},${variantIdx})">Confirmer</button>
+  `;
+}
+
+function doDeleteVariant(watchId, variantIdx) {
+  const w = watches.find(x => x.id === watchId);
+  if (w && Array.isArray(w.variants) && variantIdx > 0) {
+    w.variants.splice(variantIdx - 1, 1);
+    save();
+    upsertWatch(w).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
+    render();
+    openDetail(w.id, Math.min(variantIdx - 1, getVariants(w).length - 1));
+    toast('Variante supprimée');
+  }
+}
+
+function confirmDelete(id) {
+  const actions = document.querySelector('#detailInner .sheet-actions');
+  if (!actions) return;
+  actions.innerHTML = `
+    <span style="font-size:13px;color:var(--muted);flex:1;display:flex;align-items:center;">Supprimer cette montre ?</span>
+    <button class="sheet-btn" onclick="openDetail(${id})">Annuler</button>
+    <button class="sheet-btn danger" onclick="doDelete(${id})">Confirmer</button>
+  `;
+}
+
+function doDelete(id) {
+  watches = watches.filter(x => x.id !== id);
+  save();
+  deleteFromCloud(id).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
+  closeDetail();
+  buildBrandTabs();
+  render();
+  toast('Montre supprimée');
+}
+
+/* ── Favorites & Dream ── */
 function toggleFav(id) {
   const w = watches.find(x => x.id === id);
   if (w) { w.favorite = !w.favorite; saveAndSync(w); render(); }
 }
 
+function toggleDream(id) {
+  const w = watches.find(x => x.id === id);
+  if (w) { w.dream = !w.dream; saveAndSync(w); render(); }
+}
+
 /* ── Edit sheet ── */
-function openEdit(id) {
+let editingVariantIdx = 0;
+
+function openEdit(id, variantIdx) {
   editingId = id;
+  editingVariantIdx = variantIdx || 0;
   const w = watches.find(x => x.id === id);
   if (!w) return;
+
+  // Get the object to edit (main watch or a variant)
+  const isVariant = editingVariantIdx > 0;
+  const src = isVariant ? (w.variants[editingVariantIdx - 1] || w) : w;
+
+  const tags = Array.isArray(w.tags) ? [...w.tags] : [];
   const inner = document.getElementById('editInner');
+
+  function tagOpts(list, containerId, single) {
+    return list.map(t => {
+      const sel = tags.includes(t);
+      return `<button class="tag-option${sel?' selected':''}" data-tag="${esc(t)}" onclick="editToggleTag(this,${single?'true':'false'})" type="button">${esc(t)}</button>`;
+    }).join('');
+  }
+
+  function catAddRow(cat) {
+    return `<div class="tag-custom-row" style="margin-top:8px;">
+      <input class="tag-custom-input" id="catInput_${cat}" placeholder="Nouveau tag…" onkeydown="if(event.key==='Enter'){event.preventDefault();addCatTag('${cat}');}">
+      <button class="tag-add-btn" onclick="addCatTag('${cat}')" type="button">+</button>
+    </div>`;
+  }
+
   inner.innerHTML = `
     <div class="sheet-handle"></div>
     <div class="sheet-header">
-      <div><div class="sheet-brand">Modifier</div><div class="sheet-name">${esc(w.brand)}</div></div>
+      <div><div class="sheet-brand">${isVariant ? `Variante ${editingVariantIdx + 1}` : 'Modifier'}</div><div class="sheet-name">${esc(src.brand||w.brand)}</div></div>
       <button class="sheet-close" onclick="closeEdit()">✕</button>
     </div>
     <div class="edit-section">
       <h3>Identification</h3>
-      <div class="edit-field"><label class="edit-label">Nom du modèle</label><input class="edit-input" id="em_model" value="${esc(w.model)}"></div>
+      <div class="edit-field"><label class="edit-label">Nom du modèle</label><input class="edit-input" id="em_model" value="${esc(src.model)}"></div>
       <div class="edit-grid">
-        <div class="edit-field"><label class="edit-label">Marque</label><input class="edit-input" id="em_brand" value="${esc(w.brand)}"></div>
-        <div class="edit-field"><label class="edit-label">Prix</label><input class="edit-input" id="em_price" value="${esc(w.price)}"></div>
+        <div class="edit-field"><label class="edit-label">Marque</label><input class="edit-input" id="em_brand" value="${esc(src.brand)}"></div>
+        <div class="edit-field"><label class="edit-label">Prix</label><input class="edit-input" id="em_price" value="${esc(src.price)}"></div>
       </div>
     </div>
     <div class="edit-section" style="padding-top:0">
       <h3>Caractéristiques</h3>
       <div class="edit-grid">
-        <div class="edit-field"><label class="edit-label">Mouvement</label><input class="edit-input" id="em_movement" value="${esc(w.movement)}"></div>
-        <div class="edit-field"><label class="edit-label">Diamètre</label><input class="edit-input" id="em_diameter" value="${esc(w.diameter)}"></div>
-        <div class="edit-field"><label class="edit-label">Boîtier</label><input class="edit-input" id="em_case" value="${esc(w.caseMaterial)}"></div>
-        <div class="edit-field"><label class="edit-label">Verre</label><input class="edit-input" id="em_glass" value="${esc(w.glassMaterial)}"></div>
-        <div class="edit-field"><label class="edit-label">Bracelet</label><input class="edit-input" id="em_strap" value="${esc(w.strapMaterial)}"></div>
-        <div class="edit-field"><label class="edit-label">Étanchéité</label><input class="edit-input" id="em_water" value="${esc(w.waterResistance)}"></div>
-        <div class="edit-field"><label class="edit-label">Pays d'origine</label><input class="edit-input" id="em_country" value="${esc(w.country)}"></div>
+        <div class="edit-field"><label class="edit-label">Mouvement</label><input class="edit-input" id="em_movement" value="${esc(src.movement)}"></div>
+        <div class="edit-field"><label class="edit-label">Diamètre</label><input class="edit-input" id="em_diameter" value="${esc(src.diameter)}"></div>
+        <div class="edit-field"><label class="edit-label">Boîtier</label><input class="edit-input" id="em_case" value="${esc(src.caseMaterial)}"></div>
+        <div class="edit-field"><label class="edit-label">Verre</label><input class="edit-input" id="em_glass" value="${esc(src.glassMaterial)}"></div>
+        <div class="edit-field"><label class="edit-label">Bracelet</label><input class="edit-input" id="em_strap" value="${esc(src.strapMaterial)}"></div>
+        <div class="edit-field"><label class="edit-label">Étanchéité</label><input class="edit-input" id="em_water" value="${esc(src.waterResistance)}"></div>
+        <div class="edit-field"><label class="edit-label">Pays d'origine</label><input class="edit-input" id="em_country" value="${esc(src.country)}"></div>
       </div>
     </div>
+    ${!isVariant ? `
+    <div class="edit-section" style="padding-top:0">
+      <h3>Tags</h3>
+      <div class="tag-group">
+        <span class="tag-group-label">Mouvement (choix unique)</span>
+        <div class="tag-options" id="to_mouvement">${tagOpts(TAGS_MOUVEMENT, 'to_mouvement', true)}</div>
+        ${catAddRow('mouvement')}
+      </div>
+      <div class="tag-group">
+        <span class="tag-group-label">Type</span>
+        <div class="tag-options" id="to_type">${tagOpts(TAGS_TYPE, 'to_type', false)}</div>
+        ${catAddRow('type')}
+      </div>
+      <div class="tag-group">
+        <span class="tag-group-label">Spécificités</span>
+        <div class="tag-options" id="to_spec">${tagOpts(TAGS_SPEC, 'to_spec', false)}</div>
+        ${catAddRow('spec')}
+      </div>
+    </div>` : `<div class="edit-section" style="padding-top:0;padding-bottom:0"><p style="font-size:12px;color:var(--muted);">Les tags sont partagés entre toutes les variantes. Modifiez-les depuis la variante principale.</p></div>`}
     <div class="edit-section" style="padding-top:0">
       <h3>Liens</h3>
-      <div class="edit-field"><label class="edit-label">URL photo</label><input class="edit-input" id="em_img" value="${esc(w.imageUrl)}" placeholder="https://…"></div>
-      <div class="edit-field"><label class="edit-label">URL page</label><input class="edit-input" id="em_url" value="${esc(w.url)}" placeholder="https://…"></div>
+      <div class="edit-field"><label class="edit-label">URL photo</label><input class="edit-input" id="em_img" value="${esc(src.imageUrl)}" placeholder="https://…"></div>
+      <div class="edit-field"><label class="edit-label">URL page</label><input class="edit-input" id="em_url" value="${esc(src.url)}" placeholder="https://…"></div>
     </div>
     <div class="sheet-actions">
       <button class="sheet-btn" onclick="closeEdit()">Annuler</button>
@@ -886,6 +1503,65 @@ function openEdit(id) {
     </div>
   `;
   document.getElementById('editSheet').classList.add('open');
+}
+
+function editToggleTag(btn, single) {
+  const tag = btn.dataset.tag;
+  if (single) {
+    // Deselect all siblings first
+    btn.parentElement.querySelectorAll('.tag-option').forEach(b => b.classList.remove('selected'));
+    if (!btn.classList.contains('selected')) btn.classList.add('selected');
+    else btn.classList.remove('selected');
+  } else {
+    btn.classList.toggle('selected');
+  }
+}
+
+function addCatTag(cat) {
+  const input = document.getElementById('catInput_' + cat);
+  const val = input.value.trim();
+  if (!val) return;
+
+  // Add to the category list if not already there
+  const catMap = { mouvement: TAGS_MOUVEMENT, type: TAGS_TYPE, spec: TAGS_SPEC };
+  const containerId = { mouvement: 'to_mouvement', type: 'to_type', spec: 'to_spec' };
+  const single = cat === 'mouvement';
+  const list = catMap[cat];
+  if (!list.includes(val)) {
+    list.push(val);
+    saveCatTags(cat, list);
+  }
+
+  // Add button to the DOM if not already there
+  const container = document.getElementById(containerId[cat]);
+  if (!container.querySelector(`[data-tag="${val}"]`)) {
+    const btn = document.createElement('button');
+    btn.className = 'tag-option selected';
+    btn.dataset.tag = val;
+    btn.type = 'button';
+    btn.textContent = val;
+    btn.onclick = function() { editToggleTag(this, single); };
+    container.appendChild(btn);
+    // If single, deselect others
+    if (single) {
+      container.querySelectorAll('.tag-option').forEach(b => { if (b !== btn) b.classList.remove('selected'); });
+    }
+  } else {
+    // Just select it
+    const existing = container.querySelector(`[data-tag="${val}"]`);
+    if (single) container.querySelectorAll('.tag-option').forEach(b => b.classList.remove('selected'));
+    existing.classList.add('selected');
+  }
+
+  input.value = '';
+}
+
+function getEditTags() {
+  const tags = [];
+  document.querySelectorAll('#to_mouvement .tag-option.selected').forEach(b => tags.push(b.dataset.tag));
+  document.querySelectorAll('#to_type .tag-option.selected').forEach(b => tags.push(b.dataset.tag));
+  document.querySelectorAll('#to_spec .tag-option.selected').forEach(b => tags.push(b.dataset.tag));
+  return tags;
 }
 
 function closeEdit(e) {
@@ -897,18 +1573,30 @@ function closeEdit(e) {
 function saveEdit() {
   const w = watches.find(x => x.id === editingId);
   if (!w) return;
-  w.model = document.getElementById('em_model').value;
-  w.brand = document.getElementById('em_brand').value;
-  w.price = document.getElementById('em_price').value;
-  w.movement = document.getElementById('em_movement').value;
-  w.diameter = document.getElementById('em_diameter').value;
-  w.caseMaterial = document.getElementById('em_case').value;
-  w.glassMaterial = document.getElementById('em_glass').value;
-  w.strapMaterial = document.getElementById('em_strap').value;
-  w.waterResistance = document.getElementById('em_water').value;
-  w.country = document.getElementById('em_country').value;
-  w.imageUrl = document.getElementById('em_img').value;
-  w.url = document.getElementById('em_url').value;
+
+  const isVariant = editingVariantIdx > 0;
+  const target = isVariant ? w.variants[editingVariantIdx - 1] : w;
+
+  target.model = document.getElementById('em_model').value;
+  target.brand = document.getElementById('em_brand').value;
+  target.price = document.getElementById('em_price').value;
+  target.movement = document.getElementById('em_movement').value;
+  target.diameter = document.getElementById('em_diameter').value;
+  target.caseMaterial = document.getElementById('em_case').value;
+  target.glassMaterial = document.getElementById('em_glass').value;
+  target.strapMaterial = document.getElementById('em_strap').value;
+  target.waterResistance = document.getElementById('em_water').value;
+  target.country = document.getElementById('em_country').value;
+  target.imageUrl = document.getElementById('em_img').value;
+  target.url = document.getElementById('em_url').value;
+
+  if (!isVariant) {
+    const manualTags = getEditTags().filter(t => t !== 'Luxe');
+    const p = parsePrice(w.price);
+    w.tags = [...manualTags, ...(!isNaN(p) && p >= 1000 ? ['Luxe'] : [])];
+  }
+
+  w.addedAt = w.addedAt || Date.now();
   save();
   upsertWatch(w).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
   closeEdit();
