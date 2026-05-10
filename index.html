@@ -978,16 +978,24 @@ Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`,
     });
     const data = await resp.json();
     const textBlock = data.content && data.content.find(b => b.type === 'text');
-    if (!textBlock) throw new Error('no text');
-    const raw = textBlock.text.replace(/```json|```/g, '').trim();
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('no json');
-    const info = JSON.parse(match[0]);
+    let info = {};
+    if (textBlock) {
+      const raw = textBlock.text.replace(/```json|```/g, '').trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) {
+        try { info = JSON.parse(match[0]); } catch(e) { info = {}; }
+      }
+    }
+
+    // Fallback: extract brand from domain if not found
+    const domain = new URL(url).hostname.replace('www.','').split('.')[0];
+    const brandFallback = domain.charAt(0).toUpperCase() + domain.slice(1);
+
     const w = {
       id: Date.now(),
       url,
       model: info.model || '—',
-      brand: info.brand || '—',
+      brand: info.brand || brandFallback,
       price: info.price || '—',
       movement: info.movement || '—',
       diameter: info.diameter || '—',
@@ -1000,6 +1008,7 @@ Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`,
       favorite: false,
       addedAt: Date.now()
     };
+    const isPartial = !info.model || info.model === '—';
     watches.unshift(w);
     save();
     await upsertWatch(w);
@@ -1008,9 +1017,26 @@ Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`,
     closeAdd();
     buildBrandTabs();
     render();
-    toast('Montre ajoutée ✓');
+    if (isPartial) {
+      toast('Fiche incomplète — à compléter manuellement');
+      setTimeout(() => openDetail(w.id), 400);
+    } else {
+      toast('Montre ajoutée ✓');
+    }
   } catch(e) {
-    document.getElementById('loadArea').innerHTML = `<div class="loading-row"><span class="loading-msg" style="color:#c0392b">Erreur — vérifiez l'URL</span></div>`;
+    // Last resort: create empty card from URL
+    const domain = (() => { try { return new URL(url).hostname.replace('www.','').split('.')[0]; } catch(e) { return ''; } })();
+    const brandFallback = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : '—';
+    const w = { id: Date.now(), url, model: '—', brand: brandFallback, price: '—', movement: '—', diameter: '—', caseMaterial: '—', glassMaterial: '—', strapMaterial: '—', waterResistance: '—', country: '—', imageUrl: '', favorite: false, addedAt: Date.now() };
+    watches.unshift(w);
+    save();
+    upsertWatch(w).catch(()=>{});
+    buildBrandTabs();
+    render();
+    document.getElementById('urlInput').value = '';
+    closeAdd();
+    toast('Extraction impossible — fiche créée vide');
+    setTimeout(() => openDetail(w.id), 400);
     console.error(e);
   }
   btn.disabled = false;
@@ -1342,11 +1368,13 @@ async function extractVariant() {
     });
     const data = await resp.json();
     const textBlock = data.content && data.content.find(b => b.type === 'text');
-    if (!textBlock) throw new Error('no text');
-    const raw = textBlock.text.replace(/```json|```/g, '').trim();
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('no json');
-    const info = JSON.parse(match[0]);
+    let info = {};
+    if (textBlock) {
+      const raw = textBlock.text.replace(/```json|```/g, '').trim();
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) { try { info = JSON.parse(match[0]); } catch(e) { info = {}; } }
+    }
+
     const variant = { url, model: info.model||'—', brand: info.brand||'—', price: info.price||'—', movement: info.movement||'—', diameter: info.diameter||'—', caseMaterial: info.caseMaterial||'—', glassMaterial: info.glassMaterial||'—', strapMaterial: info.strapMaterial||'—', waterResistance: info.waterResistance||'—', country: info.country||'—', imageUrl: info.imageUrl||'' };
 
     const w = watches.find(x => x.id === addingVariantForId);
@@ -1359,10 +1387,22 @@ async function extractVariant() {
       render();
       document.getElementById('variantSheet').classList.remove('open');
       openDetail(w.id, getVariants(w).length - 1);
-      toast('Variante ajoutée ✓');
+      const isPartial = !info.model || info.model === '—';
+      toast(isPartial ? 'Variante incomplète — à compléter manuellement' : 'Variante ajoutée ✓');
     }
   } catch(e) {
-    document.getElementById('variantLoadArea').innerHTML = `<div class="loading-row"><span class="loading-msg" style="color:#c0392b">Erreur — vérifiez l'URL</span></div>`;
+    // Fallback: create empty variant
+    const w = watches.find(x => x.id === addingVariantForId);
+    if (w) {
+      if (!Array.isArray(w.variants)) w.variants = [];
+      w.variants.push({ url, model: '—', brand: w.brand, price: '—', movement: '—', diameter: '—', caseMaterial: '—', glassMaterial: '—', strapMaterial: '—', waterResistance: '—', country: '—', imageUrl: '' });
+      save();
+      upsertWatch(w).catch(()=>{});
+      render();
+      document.getElementById('variantSheet').classList.remove('open');
+      openDetail(w.id, getVariants(w).length - 1);
+      toast('Extraction impossible — variante créée vide');
+    }
     console.error(e);
   }
   btn.disabled = false;
