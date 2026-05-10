@@ -713,51 +713,33 @@ const sbHeaders = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 
 async function syncFromCloud() {
   if (syncing) return;
   syncing = true;
+  setSyncIcon('⟳', 'syncing');
   try {
-    setSyncIcon('⟳', 'syncing');
     const res = await fetch(`${SUPABASE_URL}/rest/v1/watches?select=id,data,updated_at&order=updated_at.desc`, { headers: sbHeaders });
     if (!res.ok) throw new Error(await res.text());
     const rows = await res.json();
-    if (rows.length === 0 && watches.length > 0) {
-      // Cloud is empty but we have local data — first time setup, push everything
-      await pushAllToCloud();
-    } else {
-      const cloudMap = {};
-      rows.forEach(r => { cloudMap[r.id] = { ...r.data, _updatedAt: r.updated_at }; });
-      const localMap = {};
-      watches.forEach(w => { localMap[w.id] = w; });
 
-      const deletedIds = getDeletedIds();
+    const deletedIds = getDeletedIds();
 
-      // Ensure tombstones are written for all locally-deleted IDs still in cloud
-      for (const id of deletedIds) {
-        if (cloudMap[id] && !cloudMap[id]._deleted) await deleteFromCloud(id);
-      }
+    // Build watch list from cloud, skipping tombstones and blacklisted IDs
+    const fromCloud = rows
+      .filter(r => !r.data._deleted && !deletedIds.has(String(r.id)))
+      .map(r => r.data);
 
-      const merged = [];
-      for (const id of Object.keys(cloudMap)) {
-        const entry = cloudMap[id];
-
-        // Skip tombstones — blacklist locally and ignore
-        if (entry._deleted) {
-          addDeletedId(id);
-          continue;
-        }
-
-        // Skip locally blacklisted
-        if (deletedIds.has(String(id))) continue;
-
-        const local = localMap[id];
-        const cloudTs = new Date(entry._updatedAt || 0).getTime();
-        const localTs = local ? (local.addedAt || 0) : 0;
-        const winner = (local && localTs > cloudTs) ? { ...local } : { ...entry };
-        delete winner._updatedAt;
-        merged.push(winner);
-        if (local && localTs > cloudTs) await upsertWatch(local);
-      }
-      watches = merged.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
+    if (fromCloud.length > 0) {
+      watches = fromCloud.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(watches));
+    } else if (rows.length === 0 && watches.length > 0) {
+      // Cloud truly empty, push local
+      await pushAllToCloud();
     }
+
+    // Write tombstones for any locally deleted IDs still in cloud
+    for (const id of deletedIds) {
+      const inCloud = rows.find(r => String(r.id) === String(id));
+      if (inCloud && !inCloud.data._deleted) await deleteFromCloud(id);
+    }
+
     setSyncIcon('✓', 'ok');
     buildBrandTabs();
     render();
@@ -777,7 +759,6 @@ async function upsertWatch(w) {
 }
 
 async function deleteFromCloud(id) {
-  // Soft delete: write a tombstone so all devices know it's gone
   await fetch(`${SUPABASE_URL}/rest/v1/watches`, {
     method: 'POST',
     headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates' },

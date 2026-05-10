@@ -1,4 +1,4 @@
-const CACHE = 'montres-v8';
+const CACHE = 'montres-v9';
 const ASSETS = [
   './',
   './index.html',
