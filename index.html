@@ -708,29 +708,35 @@ async function syncFromCloud() {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/watches?select=id,data,updated_at&order=updated_at.desc`, { headers: sbHeaders });
     if (!res.ok) throw new Error(await res.text());
     const rows = await res.json();
-    if (rows.length === 0) {
+    if (rows.length === 0 && watches.length > 0) {
+      // Cloud is empty but we have local data — first time setup, push everything
       await pushAllToCloud();
     } else {
       const cloudMap = {};
       rows.forEach(r => { cloudMap[r.id] = { ...r.data, _updatedAt: r.updated_at }; });
       const localMap = {};
       watches.forEach(w => { localMap[w.id] = w; });
-      const allIds = new Set([...Object.keys(cloudMap), ...Object.keys(localMap).map(String)]);
+
       const merged = [];
-      for (const id of allIds) {
+      // Only iterate cloud IDs — if something is in local but not cloud, it was deleted remotely
+      for (const id of Object.keys(cloudMap)) {
         const cloud = cloudMap[id];
         const local = localMap[id];
-        if (cloud && local) {
+        if (local) {
+          // Both exist: most recent wins
           const cloudTs = new Date(cloud._updatedAt || 0).getTime();
           const localTs = local.addedAt || 0;
-          merged.push(cloudTs >= localTs ? { ...cloud } : { ...local });
-        } else if (cloud) {
-          merged.push({ ...cloud });
+          const winner = cloudTs >= localTs ? { ...cloud } : { ...local };
+          delete winner._updatedAt;
+          merged.push(winner);
+          // If local is newer, push it up
+          if (localTs > cloudTs) await upsertWatch(local);
         } else {
-          merged.push({ ...local });
-          await upsertWatch(local);
+          // Only in cloud: add locally
+          const entry = { ...cloud };
+          delete entry._updatedAt;
+          merged.push(entry);
         }
-        delete merged[merged.length-1]._updatedAt;
       }
       watches = merged.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(watches));
@@ -1440,14 +1446,21 @@ function confirmDelete(id) {
   `;
 }
 
-function doDelete(id) {
+async function doDelete(id) {
+  syncing = true; // block any sync during deletion
   watches = watches.filter(x => x.id !== id);
   save();
-  deleteFromCloud(id).then(() => setSyncIcon('✓', 'ok')).catch(() => setSyncIcon('!', 'err'));
   closeDetail();
   buildBrandTabs();
   render();
   toast('Montre supprimée');
+  try {
+    await deleteFromCloud(id);
+    setSyncIcon('✓', 'ok');
+  } catch(e) {
+    setSyncIcon('!', 'err');
+  }
+  syncing = false;
 }
 
 /* ── Favorites & Dream ── */
