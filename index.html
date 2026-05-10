@@ -734,10 +734,17 @@ async function syncFromCloud() {
       }
 
       const merged = [];
-      const deletedIds = getDeletedIds();
-      // Only iterate cloud IDs — if something is in local but not cloud, it was deleted remotely
+      // Only iterate cloud IDs
       for (const id of Object.keys(cloudMap)) {
-        if (deletedIds.has(String(id))) continue; // skip blacklisted IDs
+        const cloud = cloudMap[id];
+
+        // Handle tombstone (soft delete)
+        if (cloud._deleted) {
+          addDeletedId(id); // ensure blacklisted locally
+          continue;         // don't add to merged
+        }
+
+        if (deletedIds.has(String(id))) continue; // skip locally blacklisted
         const cloud = cloudMap[id];
         const local = localMap[id];
         if (local) {
@@ -778,7 +785,12 @@ async function upsertWatch(w) {
 }
 
 async function deleteFromCloud(id) {
-  await fetch(`${SUPABASE_URL}/rest/v1/watches?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders });
+  // Soft delete: write a tombstone so all devices know it's gone
+  await fetch(`${SUPABASE_URL}/rest/v1/watches`, {
+    method: 'POST',
+    headers: { ...sbHeaders, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ id, data: { _deleted: true, id }, updated_at: new Date().toISOString() })
+  });
 }
 
 async function pushAllToCloud() {
@@ -1466,7 +1478,7 @@ function confirmDelete(id) {
 
 async function doDelete(id) {
   syncing = true;
-  addDeletedId(id); // blacklist before anything else
+  addDeletedId(id);
   watches = watches.filter(x => x.id !== id);
   save();
   closeDetail();
@@ -1474,7 +1486,7 @@ async function doDelete(id) {
   render();
   toast('Montre supprimée');
   try {
-    await deleteFromCloud(id);
+    await deleteFromCloud(id); // writes tombstone
     setSyncIcon('✓', 'ok');
   } catch(e) {
     setSyncIcon('!', 'err');
