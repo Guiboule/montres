@@ -1304,7 +1304,8 @@ function openAddVariant(watchId) {
       <div id="variantLoadArea"></div>
     </div>
   `;
-  document.getElementById('detailSheet').classList.remove('open');
+  // Stack on top — don't close detailSheet
+  document.getElementById('variantSheet').style.zIndex = '70';
   document.getElementById('variantSheet').classList.add('open');
   setTimeout(() => document.getElementById('variantUrlInput')?.focus(), 100);
 }
@@ -1312,6 +1313,9 @@ function openAddVariant(watchId) {
 function closeVariantSheet(e) {
   if (!e || e.target === document.getElementById('variantSheet')) {
     document.getElementById('variantSheet').classList.remove('open');
+    // Restore detail sheet if a watch was being viewed
+    const w = watches.find(x => x.id === addingVariantForId);
+    if (w) openDetail(w.id, 0);
   }
 }
 
@@ -1353,7 +1357,7 @@ async function extractVariant() {
       await upsertWatch(w);
       setSyncIcon('✓', 'ok');
       render();
-      closeVariantSheet();
+      document.getElementById('variantSheet').classList.remove('open');
       openDetail(w.id, getVariants(w).length - 1);
       toast('Variante ajoutée ✓');
     }
