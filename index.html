@@ -919,7 +919,85 @@ function removeActiveFilter(val, kind) {
   render();
 }
 
-/* ── Add bar toggle ── */
+/* ── Extract ── */
+const EXTRACT_SYSTEM = `Tu es un assistant spécialisé dans l'extraction d'informations horlogères à partir de pages web.
+
+PRIORITÉ : Les informations présentes explicitement sur la page ont toujours la priorité absolue. En cas d'absence, tu peux faire des déductions raisonnables et évidentes, mais jamais inventer.
+
+RÈGLES PAR CHAMP :
+- model : nom exact du modèle tel qu'écrit sur la page
+- brand : marque du produit
+- price : prix affiché avec devise
+- movement : référence exacte si indiquée (ex: "Miyota 9015"). Si seul le type est mentionné, indique-le. Ne déduis pas la marque du mouvement depuis le pays d'origine.
+- diameter : diamètre du boîtier
+- caseMaterial : matériau du boîtier. Tu peux déduire "Acier inoxydable" si la page dit "stainless steel".
+- glassMaterial : matériau du verre. Ne suppose jamais "saphir" si ce n'est pas écrit.
+- strapMaterial : matériau du bracelet
+- waterResistance : résistance à l'eau
+- country : pays d'origine de la marque. Tu peux déduire depuis "Swiss Made", le siège social, etc.
+- imageUrl : URL directe de la photo principale (https://)
+
+Si une info est vraiment introuvable et non déductible, mets "—".
+Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`;
+
+async function extractWatchInfo(url, apiKey) {
+  // Step 1: try direct fetch (free, no web_search cost)
+  let htmlContent = null;
+  try {
+    const pageResp = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (pageResp.ok) {
+      const html = await pageResp.text();
+      // Strip scripts/styles, keep text
+      const clean = html
+        .replace(/<script[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 12000); // limit tokens
+      if (clean.length > 200) htmlContent = clean;
+    }
+  } catch(e) { /* CORS or timeout — will use web_search */ }
+
+  if (htmlContent) {
+    // Use direct HTML — no web_search tool needed
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: EXTRACT_SYSTEM,
+        messages: [{ role: 'user', content: `Extrais les informations horlogères depuis ce contenu de page (URL: ${url}):\n\n${htmlContent}` }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+    const match = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    if (match) {
+      const info = JSON.parse(match[0]);
+      if (info.model && info.model !== '—') return info; // success
+    }
+  }
+
+  // Step 2: fallback to web_search
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+      system: EXTRACT_SYSTEM,
+      messages: [{ role: 'user', content: `Extrais les informations horlogères de cette page: ${url}` }]
+    })
+  });
+  const data = await resp.json();
+  const text = data.content?.find(b => b.type === 'text')?.text || '';
+  const match = text.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+  if (match) return JSON.parse(match[0]);
+  return {};
+}
 function toggleAdd() {
   const bar = document.getElementById('addBar');
   const btn = document.getElementById('openAddBtn');
@@ -946,107 +1024,38 @@ async function handleAdd() {
   btn.disabled = true;
   document.getElementById('loadArea').innerHTML = `<div class="loading-row"><div class="spinner"></div><span class="loading-msg">Extraction en cours…</span></div>`;
 
+  const domain = (() => { try { return new URL(url).hostname.replace('www.','').split('.')[0]; } catch(e) { return ''; } })();
+  const brandFallback = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : '—';
+
+  let info = {};
   try {
     const apiKey = getApiKey();
-    if (!apiKey) { openSetup(); return; }
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: `Tu es un assistant spécialisé dans l'extraction d'informations horlogères à partir de pages web.
+    if (!apiKey) { openSetup(); btn.disabled = false; return; }
+    info = await extractWatchInfo(url, apiKey);
+  } catch(e) { console.error(e); }
 
-MÉTHODE : Fais une recherche web avec l'URL fournie pour lire le contenu de la page produit.
-
-PRIORITÉ : Les informations présentes explicitement sur la page ont toujours la priorité absolue. En cas d'absence, tu peux faire des déductions raisonnables et évidentes, mais jamais inventer.
-
-RÈGLES PAR CHAMP :
-- model : nom exact du modèle tel qu'écrit sur la page
-- brand : marque du produit
-- price : prix affiché avec devise
-- movement : référence exacte si indiquée (ex: "Miyota 9015"). Si seul le type est mentionné (ex: "mouvement automatique"), indique-le. Ne déduis pas la marque du mouvement depuis le pays d'origine.
-- diameter : diamètre du boîtier
-- caseMaterial : matériau du boîtier tel qu'indiqué. Tu peux déduire "Acier inoxydable" si la page dit "stainless steel".
-- glassMaterial : matériau du verre tel qu'indiqué. Ne suppose jamais "saphir" si ce n'est pas écrit — c'est une info commerciale importante.
-- strapMaterial : matériau du bracelet
-- waterResistance : résistance à l'eau
-- country : pays d'origine de la marque. Tu peux déduire depuis "Swiss Made", le siège social mentionné, etc.
-- imageUrl : URL directe de la photo principale (https://)
-
-Si une info est vraiment introuvable et non déductible, mets "—".
-Retourne UNIQUEMENT un objet JSON valide, sans backticks ni texte autour.`,
-        messages: [{ role: 'user', content: `Extrais les informations horlogères de cette page: ${url}` }]
-      })
-    });
-    const data = await resp.json();
-    const textBlock = data.content && data.content.find(b => b.type === 'text');
-    let info = {};
-    if (textBlock) {
-      const raw = textBlock.text.replace(/```json|```/g, '').trim();
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (match) {
-        try { info = JSON.parse(match[0]); } catch(e) { info = {}; }
-      }
-    }
-
-    // Fallback: extract brand from domain if not found
-    const domain = new URL(url).hostname.replace('www.','').split('.')[0];
-    const brandFallback = domain.charAt(0).toUpperCase() + domain.slice(1);
-
-    const w = {
-      id: Date.now(),
-      url,
-      model: info.model || '—',
-      brand: info.brand || brandFallback,
-      price: info.price || '—',
-      movement: info.movement || '—',
-      diameter: info.diameter || '—',
-      caseMaterial: info.caseMaterial || '—',
-      glassMaterial: info.glassMaterial || '—',
-      strapMaterial: info.strapMaterial || '—',
-      waterResistance: info.waterResistance || '—',
-      country: info.country || '—',
-      imageUrl: info.imageUrl || '',
-      favorite: false,
-      addedAt: Date.now()
-    };
-    const isPartial = !info.model || info.model === '—';
-    watches.unshift(w);
-    save();
-    await upsertWatch(w);
-    setSyncIcon('✓', 'ok');
-    document.getElementById('urlInput').value = '';
-    closeAdd();
-    buildBrandTabs();
-    render();
-    if (isPartial) {
-      toast('Fiche incomplète — à compléter manuellement');
-      setTimeout(() => openDetail(w.id), 400);
-    } else {
-      toast('Montre ajoutée ✓');
-    }
-  } catch(e) {
-    // Last resort: create empty card from URL
-    const domain = (() => { try { return new URL(url).hostname.replace('www.','').split('.')[0]; } catch(e) { return ''; } })();
-    const brandFallback = domain ? domain.charAt(0).toUpperCase() + domain.slice(1) : '—';
-    const w = { id: Date.now(), url, model: '—', brand: brandFallback, price: '—', movement: '—', diameter: '—', caseMaterial: '—', glassMaterial: '—', strapMaterial: '—', waterResistance: '—', country: '—', imageUrl: '', favorite: false, addedAt: Date.now() };
-    watches.unshift(w);
-    save();
-    upsertWatch(w).catch(()=>{});
-    buildBrandTabs();
-    render();
-    document.getElementById('urlInput').value = '';
-    closeAdd();
-    toast('Extraction impossible — fiche créée vide');
+  const w = {
+    id: Date.now(), url,
+    model: info.model || '—', brand: info.brand || brandFallback,
+    price: info.price || '—', movement: info.movement || '—',
+    diameter: info.diameter || '—', caseMaterial: info.caseMaterial || '—',
+    glassMaterial: info.glassMaterial || '—', strapMaterial: info.strapMaterial || '—',
+    waterResistance: info.waterResistance || '—', country: info.country || '—',
+    imageUrl: info.imageUrl || '', favorite: false, addedAt: Date.now()
+  };
+  watches.unshift(w);
+  save();
+  upsertWatch(w).catch(()=>{});
+  document.getElementById('urlInput').value = '';
+  closeAdd();
+  buildBrandTabs();
+  render();
+  const isPartial = !info.model || info.model === '—';
+  if (isPartial) {
+    toast('Fiche incomplète — à compléter manuellement');
     setTimeout(() => openDetail(w.id), 400);
-    console.error(e);
+  } else {
+    toast('Montre ajoutée ✓');
   }
   btn.disabled = false;
 }
@@ -1361,59 +1370,30 @@ async function extractVariant() {
   btn.disabled = true;
   document.getElementById('variantLoadArea').innerHTML = `<div class="loading-row"><div class="spinner"></div><span class="loading-msg">Extraction en cours…</span></div>`;
 
+  const w = watches.find(x => x.id === addingVariantForId);
+  if (!w) { btn.disabled = false; return; }
+
+  let info = {};
   try {
     const apiKey = getApiKey();
-    if (!apiKey) { openSetup(); return; }
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        system: `Tu es un assistant spécialisé dans l'extraction d'informations horlogères à partir de pages web. Fais une recherche web avec l'URL fournie. Priorité aux informations explicites de la page ; déductions raisonnables acceptées (ex: "stainless steel" → "Acier inoxydable", "Swiss Made" → Suisse), mais ne suppose jamais le matériau du verre ni la référence du mouvement sans preuve. Si introuvable, mets "—". Retourne UNIQUEMENT un objet JSON valide (sans backticks) : {"model","brand","price","movement","diameter","caseMaterial","glassMaterial","strapMaterial","waterResistance","country","imageUrl"}.`,
-        messages: [{ role: 'user', content: `Extrais les informations horlogères de cette page: ${url}` }]
-      })
-    });
-    const data = await resp.json();
-    const textBlock = data.content && data.content.find(b => b.type === 'text');
-    let info = {};
-    if (textBlock) {
-      const raw = textBlock.text.replace(/```json|```/g, '').trim();
-      const match = raw.match(/\{[\s\S]*\}/);
-      if (match) { try { info = JSON.parse(match[0]); } catch(e) { info = {}; } }
-    }
+    if (!apiKey) { openSetup(); btn.disabled = false; return; }
+    info = await extractWatchInfo(url, apiKey);
+  } catch(e) { console.error(e); }
 
-    const variant = { url, model: info.model||'—', brand: info.brand||'—', price: info.price||'—', movement: info.movement||'—', diameter: info.diameter||'—', caseMaterial: info.caseMaterial||'—', glassMaterial: info.glassMaterial||'—', strapMaterial: info.strapMaterial||'—', waterResistance: info.waterResistance||'—', country: info.country||'—', imageUrl: info.imageUrl||'' };
-
-    const w = watches.find(x => x.id === addingVariantForId);
-    if (w) {
-      if (!Array.isArray(w.variants)) w.variants = [];
-      w.variants.push(variant);
-      save();
-      await upsertWatch(w);
-      setSyncIcon('✓', 'ok');
-      render();
-      document.getElementById('variantSheet').classList.remove('open');
-      openDetail(w.id, getVariants(w).length - 1);
-      const isPartial = !info.model || info.model === '—';
-      toast(isPartial ? 'Variante incomplète — à compléter manuellement' : 'Variante ajoutée ✓');
-    }
-  } catch(e) {
-    // Fallback: create empty variant
-    const w = watches.find(x => x.id === addingVariantForId);
-    if (w) {
-      if (!Array.isArray(w.variants)) w.variants = [];
-      w.variants.push({ url, model: '—', brand: w.brand, price: '—', movement: '—', diameter: '—', caseMaterial: '—', glassMaterial: '—', strapMaterial: '—', waterResistance: '—', country: '—', imageUrl: '' });
-      save();
-      upsertWatch(w).catch(()=>{});
-      render();
-      document.getElementById('variantSheet').classList.remove('open');
-      openDetail(w.id, getVariants(w).length - 1);
-      toast('Extraction impossible — variante créée vide');
-    }
-    console.error(e);
-  }
+  if (!Array.isArray(w.variants)) w.variants = [];
+  w.variants.push({
+    url, model: info.model||'—', brand: info.brand||'—', price: info.price||'—',
+    movement: info.movement||'—', diameter: info.diameter||'—', caseMaterial: info.caseMaterial||'—',
+    glassMaterial: info.glassMaterial||'—', strapMaterial: info.strapMaterial||'—',
+    waterResistance: info.waterResistance||'—', country: info.country||'—', imageUrl: info.imageUrl||''
+  });
+  save();
+  upsertWatch(w).catch(()=>{});
+  render();
+  document.getElementById('variantSheet').classList.remove('open');
+  openDetail(w.id, getVariants(w).length - 1);
+  const isPartial = !info.model || info.model === '—';
+  toast(isPartial ? 'Variante incomplète — à compléter manuellement' : 'Variante ajoutée ✓');
   btn.disabled = false;
 }
 
