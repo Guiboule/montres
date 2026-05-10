@@ -727,41 +727,33 @@ async function syncFromCloud() {
       const localMap = {};
       watches.forEach(w => { localMap[w.id] = w; });
 
-      // First, ensure blacklisted IDs are gone from cloud
       const deletedIds = getDeletedIds();
+
+      // Ensure tombstones are written for all locally-deleted IDs still in cloud
       for (const id of deletedIds) {
-        if (cloudMap[id]) await deleteFromCloud(id);
+        if (cloudMap[id] && !cloudMap[id]._deleted) await deleteFromCloud(id);
       }
 
       const merged = [];
-      // Only iterate cloud IDs
       for (const id of Object.keys(cloudMap)) {
-        const cloud = cloudMap[id];
+        const entry = cloudMap[id];
 
-        // Handle tombstone (soft delete)
-        if (cloud._deleted) {
-          addDeletedId(id); // ensure blacklisted locally
-          continue;         // don't add to merged
+        // Skip tombstones — blacklist locally and ignore
+        if (entry._deleted) {
+          addDeletedId(id);
+          continue;
         }
 
-        if (deletedIds.has(String(id))) continue; // skip locally blacklisted
-        const cloud = cloudMap[id];
+        // Skip locally blacklisted
+        if (deletedIds.has(String(id))) continue;
+
         const local = localMap[id];
-        if (local) {
-          // Both exist: most recent wins
-          const cloudTs = new Date(cloud._updatedAt || 0).getTime();
-          const localTs = local.addedAt || 0;
-          const winner = cloudTs >= localTs ? { ...cloud } : { ...local };
-          delete winner._updatedAt;
-          merged.push(winner);
-          // If local is newer, push it up
-          if (localTs > cloudTs) await upsertWatch(local);
-        } else {
-          // Only in cloud: add locally
-          const entry = { ...cloud };
-          delete entry._updatedAt;
-          merged.push(entry);
-        }
+        const cloudTs = new Date(entry._updatedAt || 0).getTime();
+        const localTs = local ? (local.addedAt || 0) : 0;
+        const winner = (local && localTs > cloudTs) ? { ...local } : { ...entry };
+        delete winner._updatedAt;
+        merged.push(winner);
+        if (local && localTs > cloudTs) await upsertWatch(local);
       }
       watches = merged.sort((a,b) => (b.addedAt||0) - (a.addedAt||0));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(watches));
