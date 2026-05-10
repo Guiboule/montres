@@ -697,6 +697,16 @@ function openSetup() {
   document.getElementById('mainApp').style.display = 'none';
 }
 
+/* ── Deleted IDs blacklist ── */
+function getDeletedIds() {
+  try { return new Set(JSON.parse(localStorage.getItem('wc_deleted') || '[]')); } catch(e) { return new Set(); }
+}
+function addDeletedId(id) {
+  const ids = getDeletedIds();
+  ids.add(String(id));
+  localStorage.setItem('wc_deleted', JSON.stringify([...ids]));
+}
+
 /* ── Supabase sync ── */
 const sbHeaders = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
 
@@ -717,9 +727,17 @@ async function syncFromCloud() {
       const localMap = {};
       watches.forEach(w => { localMap[w.id] = w; });
 
+      // First, ensure blacklisted IDs are gone from cloud
+      const deletedIds = getDeletedIds();
+      for (const id of deletedIds) {
+        if (cloudMap[id]) await deleteFromCloud(id);
+      }
+
       const merged = [];
+      const deletedIds = getDeletedIds();
       // Only iterate cloud IDs — if something is in local but not cloud, it was deleted remotely
       for (const id of Object.keys(cloudMap)) {
+        if (deletedIds.has(String(id))) continue; // skip blacklisted IDs
         const cloud = cloudMap[id];
         const local = localMap[id];
         if (local) {
@@ -1447,7 +1465,8 @@ function confirmDelete(id) {
 }
 
 async function doDelete(id) {
-  syncing = true; // block any sync during deletion
+  syncing = true;
+  addDeletedId(id); // blacklist before anything else
   watches = watches.filter(x => x.id !== id);
   save();
   closeDetail();
